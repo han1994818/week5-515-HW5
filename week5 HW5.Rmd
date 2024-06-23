@@ -1,0 +1,68 @@
+---
+title: "Week5 HW5-Ames Housing Data Analysis"
+author: "ChengHan Li (Alex)"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"  # 动态设置日期为“月 日, 年”格式
+output:
+  pdf_document:
+    toc: true  # 为 PDF 添加目录
+    highlight: tango
+    latex_engine: xelatex  # 使用 XeLaTeX 引擎以支持 Unicode 字符
+  html_document:
+    toc: true  # 为 HTML 添加目录
+    toc_float: true
+    theme: united  # 使用 Bootswatch 主题
+---
+
+```{r setup, include=TRUE}
+# 设置全局块选项
+knitr::opts_chunk$set(echo = TRUE)
+# 加载所需的库
+library(AmesHousing)
+library(ggplot2)
+library(dplyr)
+library(caret)
+
+# 加载 Ames 房屋数据集
+data <- make_ames()
+
+# 显示数据的头部以了解基本结构
+head(data)
+# 提供描述性统计信息
+summary(data)
+# 设置更多的输出显示
+options(max.print = 1000)
+
+# 创建 'Year_Built' 的直方图
+ggplot(data, aes(x = Year_Built)) +
+  geom_histogram(bins = 30, fill = "cornflowerblue") +
+  ggtitle("Distribution of Year Built")
+
+# 确认数据中是否包含 'SalePrice'
+if ("SalePrice" %in% names(data)) {
+    # 创建 'Gr_Liv_Area' 和 'SalePrice' 之间的散点图
+    ggplot(data, aes(x = Gr_Liv_Area, y = SalePrice)) +
+      geom_point(alpha = 0.6) +
+      geom_smooth(method = lm, color = "red", se = FALSE) +
+      ggtitle("Relationship between Ground Living Area and Sale Price")
+} else {
+    cat("The SalePrice column is missing from the dataset.\n")
+}
+
+# 检查 'SalePrice' 列是否存在于数据中并进行回归分析
+if ("SalePrice" %in% names(data)) {
+    X <- data$Gr_Liv_Area
+    y <- data$SalePrice
+    trainIndex <- createDataPartition(y, p = .8, list = FALSE, times = 1)
+    X_train <- X[trainIndex]
+    X_test <- X[-trainIndex]
+    y_train <- y[trainIndex]
+    y_test <- y[-trainIndex]
+    model <- lm(y_train ~ X_train)
+    y_pred <- predict(model, newdata = data.frame(X_train = X_test))
+    mse <- mean((y_test - y_pred)^2)
+    r2 <- summary(model)$r.squared
+    cat("Mean Squared Error: ", mse, "\n")
+    cat("R^2 Score: ", r2, "\n")
+} else {
+    cat("The SalePrice column is missing from the dataset.\n")
+}
